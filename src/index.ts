@@ -19,6 +19,12 @@ type EthSignKeychainPasswordState = {
   logins: EthSignKeychainEntry[];
 };
 
+type Response<T> = {
+  success: boolean;
+  data?: T;
+  message?: any;
+};
+
 function useKeychain() {
   const [initialSync, handleInitialSync] = useState(false);
 
@@ -33,15 +39,25 @@ function useKeychain() {
    * @param snapId - The ID of the snap.
    * @param params - The params to pass with the snap to connect.
    */
-  const connectSnap = async (snapId: string = SNAP_ID, params: Record<"version" | string, unknown> = {}) => {
+  const connectSnap = async (
+    snapId: string = SNAP_ID,
+    params: Record<"version" | string, unknown> = {}
+  ): Promise<Response<any>> => {
     const ethereum = getEthereum();
     if (ethereum) {
-      return await ethereum.request({
-        method: "wallet_requestSnaps",
-        params: {
-          [snapId]: params
-        }
+      return new Promise((resolve) => {
+        ethereum
+          .request({
+            method: "wallet_requestSnaps",
+            params: {
+              [snapId]: params
+            }
+          })
+          .then((res: any) => resolve({ success: true, data: res }))
+          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
       });
+    } else {
+      return { success: false, message: "MetaMask not detected." };
     }
   };
 
@@ -50,12 +66,19 @@ function useKeychain() {
    *
    * @returns The snaps installed in MetaMask.
    */
-  const getSnaps: any = async () => {
+  const getSnaps: any = async (): Promise<Response<any>> => {
     const ethereum = getEthereum();
     if (ethereum) {
-      return await ethereum.request({
-        method: "wallet_getSnaps"
+      return new Promise((resolve) => {
+        ethereum
+          .request({
+            method: "wallet_getSnaps"
+          })
+          .then((res: any) => resolve({ success: true, data: res }))
+          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
       });
+    } else {
+      return { success: false, message: "MetaMask not detected." };
     }
   };
 
@@ -68,8 +91,13 @@ function useKeychain() {
   const getSnap = async (version: string) => {
     try {
       const snaps = await getSnaps();
+      if (!snaps.success) {
+        return undefined;
+      }
 
-      return Object.values(snaps).find((snap: any) => snap.id === SNAP_ID && (!version || snap.version === version));
+      return Object.values(snaps.data).find(
+        (snap: any) => snap.id === SNAP_ID && (!version || snap.version === version)
+      );
     } catch (e) {
       console.log("Failed to obtain installed snap", e);
       return undefined;
@@ -81,7 +109,7 @@ function useKeychain() {
    *
    * @returns True if the MetaMask version is Flask, false otherwise.
    */
-  const isFlask = async () => {
+  const isFlask = async (): Promise<boolean> => {
     const ethereum = getEthereum();
     try {
       const clientVersion = await ethereum?.request({
@@ -102,11 +130,8 @@ function useKeychain() {
    * @param {*} url The URL to get the password state for.
    * @returns
    */
-  const getPassword = async (url: string = getUrl()): Promise<EthSignKeychainPasswordState | undefined> => {
+  const getPassword = async (url: string = getUrl()): Promise<Response<EthSignKeychainPasswordState>> => {
     const ethereum = getEthereum();
-    if (!ethereum) {
-      return undefined;
-    }
     if (ethereum) {
       if (!initialSync) {
         const success = await sync();
@@ -114,15 +139,20 @@ function useKeychain() {
           handleInitialSync(true);
         }
       }
-      return await ethereum.request({
-        method: "wallet_invokeSnap",
-        params: {
-          snapId: SNAP_ID,
-          request: { method: "get_password", params: { website: url } }
-        }
+      return new Promise((resolve) => {
+        ethereum
+          .request({
+            method: "wallet_invokeSnap",
+            params: {
+              snapId: SNAP_ID,
+              request: { method: "get_password", params: { website: url } }
+            }
+          })
+          .then((res: any) => resolve({ success: true, data: res }))
+          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
       });
     } else {
-      return undefined;
+      return { success: false, message: "MetaMask not detected." };
     }
   };
 
@@ -139,19 +169,26 @@ function useKeychain() {
     password: string,
     url: string = getUrl(),
     controlled: boolean = true
-  ) => {
+  ): Promise<Response<any>> => {
     const ethereum = getEthereum();
     if (ethereum) {
-      return await ethereum.request({
-        method: "wallet_invokeSnap",
-        params: {
-          snapId: SNAP_ID,
-          request: {
-            method: "set_password",
-            params: { website: url, username: username, password: password, controlled: controlled }
-          }
-        }
+      return new Promise((resolve) => {
+        ethereum
+          .request({
+            method: "wallet_invokeSnap",
+            params: {
+              snapId: SNAP_ID,
+              request: {
+                method: "set_password",
+                params: { website: url, username: username, password: password, controlled: controlled }
+              }
+            }
+          })
+          .then((res: any) => resolve({ success: true, data: res }))
+          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
       });
+    } else {
+      return { success: false, message: "MetaMask not detected." };
     }
   };
 
@@ -161,19 +198,26 @@ function useKeychain() {
    * @param {*} username The username to remove a password for.
    * @returns
    */
-  const removePassword = async (url: string = getUrl(), username: string) => {
+  const removePassword = async (url: string = getUrl(), username: string): Promise<Response<any>> => {
     const ethereum = getEthereum();
     if (ethereum) {
-      return await ethereum.request({
-        method: "wallet_invokeSnap",
-        params: {
-          snapId: SNAP_ID,
-          request: {
-            method: "remove_password",
-            params: { website: url, username: username }
-          }
-        }
+      return new Promise((resolve) => {
+        ethereum
+          .request({
+            method: "wallet_invokeSnap",
+            params: {
+              snapId: SNAP_ID,
+              request: {
+                method: "remove_password",
+                params: { website: url, username: username }
+              }
+            }
+          })
+          .then((res: any) => resolve({ success: true, data: res }))
+          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
       });
+    } else {
+      return { success: false, message: "MetaMask not detected." };
     }
   };
 
@@ -181,22 +225,25 @@ function useKeychain() {
    * Sync local password state with remote Arweave state.
    * @returns
    */
-  const sync = async () => {
+  const sync = async (): Promise<Response<any>> => {
     const ethereum = getEthereum();
     if (ethereum) {
-      return await ethereum
-        .request({
-          method: "wallet_invokeSnap",
-          params: {
-            snapId: SNAP_ID,
-            request: {
-              method: "sync"
+      return new Promise((resolve) => {
+        ethereum
+          .request({
+            method: "wallet_invokeSnap",
+            params: {
+              snapId: SNAP_ID,
+              request: {
+                method: "sync"
+              }
             }
-          }
-        })
-        .catch(() => {
-          return false;
-        });
+          })
+          .then((res: any) => resolve({ success: true, data: res }))
+          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
+      });
+    } else {
+      return { success: false, message: "MetaMask not detected." };
     }
   };
 
@@ -206,19 +253,26 @@ function useKeychain() {
    * @param {*} neverSave Boolean value for whether or not we should save the password state.
    * @returns
    */
-  const setNeverSave = async (url: string = getUrl(), neverSave: string) => {
+  const setNeverSave = async (url: string = getUrl(), neverSave: string): Promise<Response<any>> => {
     const ethereum = getEthereum();
     if (ethereum) {
-      return await ethereum.request({
-        method: "wallet_invokeSnap",
-        params: {
-          snapId: SNAP_ID,
-          request: {
-            method: "set_neversave",
-            params: { website: url, neverSave: neverSave }
-          }
-        }
+      return new Promise((resolve) => {
+        ethereum
+          .request({
+            method: "wallet_invokeSnap",
+            params: {
+              snapId: SNAP_ID,
+              request: {
+                method: "set_neversave",
+                params: { website: url, neverSave: neverSave }
+              }
+            }
+          })
+          .then((res: any) => resolve({ success: true, data: res }))
+          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
       });
+    } else {
+      return { success: false, message: "MetaMask not detected." };
     }
   };
 
