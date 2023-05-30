@@ -1,0 +1,36 @@
+{
+  "name": "ethsign-keychain-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "target": "esnext",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jbettenc/ethsign-keychain-api.git"
+  },
+  "author": "jbettenc",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jbettenc/ethsign-keychain-api/issues"
+  },
+  "homepage": "https://github.com/jbettenc/ethsign-keychain-api#readme",
+  "peerDependencies": {
+    "@types/react": "^18.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^4.9.5"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not op_mini all"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.2.5"
+  }
+}
