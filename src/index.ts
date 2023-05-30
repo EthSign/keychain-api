@@ -1,6 +1,24 @@
 import React, { useState } from "react";
 import { SNAP_ID } from "./config";
 
+type EthSignKeychainBase = {
+  address?: string;
+  timestamp: number;
+};
+
+type EthSignKeychainEntry = {
+  url: string;
+  username: string;
+  password: string;
+  controlled: string | null;
+} & EthSignKeychainBase;
+
+type EthSignKeychainPasswordState = {
+  timestamp: number;
+  neverSave: boolean;
+  logins: EthSignKeychainEntry[];
+};
+
 function useKeychain() {
   const [initialSync, handleInitialSync] = useState(false);
 
@@ -79,7 +97,150 @@ function useKeychain() {
     }
   };
 
-  return { connectSnap, getSnap, isFlask };
+  /**
+   * Gets the password state for a given URL.
+   * @param {*} url The URL to get the password state for.
+   * @returns
+   */
+  const getPassword = async (url: string = getUrl()): Promise<EthSignKeychainPasswordState | undefined> => {
+    const ethereum = getEthereum();
+    if (!ethereum) {
+      return undefined;
+    }
+    if (ethereum) {
+      if (!initialSync) {
+        const success = await sync();
+        if (success) {
+          handleInitialSync(true);
+        }
+      }
+      return await ethereum.request({
+        method: "wallet_invokeSnap",
+        params: {
+          snapId: SNAP_ID,
+          request: { method: "get_password", params: { website: url } }
+        }
+      });
+    } else {
+      return undefined;
+    }
+  };
+
+  /**
+   * Update the password state for a given URL, username, and password combination.
+   * @param {*} username The username to set a password for.
+   * @param {*} password The password to set.
+   * @param {*} url The URL to set a password for.
+   * @param {*} controlled Marks that this credential is controlled by an API and not created by a user.
+   * @returns
+   */
+  const setPassword = async (
+    username: string,
+    password: string,
+    url: string = getUrl(),
+    controlled: boolean = true
+  ) => {
+    const ethereum = getEthereum();
+    if (ethereum) {
+      return await ethereum.request({
+        method: "wallet_invokeSnap",
+        params: {
+          snapId: SNAP_ID,
+          request: {
+            method: "set_password",
+            params: { website: url, username: username, password: password, controlled: controlled }
+          }
+        }
+      });
+    }
+  };
+
+  /**
+   * Remove a password entry from a URL's state given its corresponding username.
+   * @param {*} url The URL to remove a password from.
+   * @param {*} username The username to remove a password for.
+   * @returns
+   */
+  const removePassword = async (url: string = getUrl(), username: string) => {
+    const ethereum = getEthereum();
+    if (ethereum) {
+      return await ethereum.request({
+        method: "wallet_invokeSnap",
+        params: {
+          snapId: SNAP_ID,
+          request: {
+            method: "remove_password",
+            params: { website: url, username: username }
+          }
+        }
+      });
+    }
+  };
+
+  /**
+   * Sync local password state with remote Arweave state.
+   * @returns
+   */
+  const sync = async () => {
+    const ethereum = getEthereum();
+    if (ethereum) {
+      return await ethereum
+        .request({
+          method: "wallet_invokeSnap",
+          params: {
+            snapId: SNAP_ID,
+            request: {
+              method: "sync"
+            }
+          }
+        })
+        .catch(() => {
+          return false;
+        });
+    }
+  };
+
+  /**
+   * Set whether or not we should save passwords for a given url.
+   * @param {*} url URL for state we are trying to update.
+   * @param {*} neverSave Boolean value for whether or not we should save the password state.
+   * @returns
+   */
+  const setNeverSave = async (url: string = getUrl(), neverSave: string) => {
+    const ethereum = getEthereum();
+    if (ethereum) {
+      return await ethereum.request({
+        method: "wallet_invokeSnap",
+        params: {
+          snapId: SNAP_ID,
+          request: {
+            method: "set_neversave",
+            params: { website: url, neverSave: neverSave }
+          }
+        }
+      });
+    }
+  };
+
+  function getBaseUrl(url: string = getUrl()) {
+    let baseUrl = url.toString().slice(0, url.toString().indexOf("?") ?? url.toString().length);
+    // Remove trailing slash in url
+    if (baseUrl.at(url.length - 1) === "/") {
+      baseUrl = baseUrl.substring(0, baseUrl.length - 1);
+    }
+
+    return baseUrl;
+  }
+
+  /**
+   * Get the current window's base URL for storing passwords.
+   * @returns
+   */
+  function getUrl() {
+    return getBaseUrl(window?.location?.href ?? "");
+  }
+
+  return { connectSnap, getSnap, isFlask, getPassword, setPassword, removePassword, sync, setNeverSave, getUrl };
 }
 
 export default useKeychain;
