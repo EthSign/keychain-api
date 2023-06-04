@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { SNAP_ID } from "./config";
+import React, { useEffect, useState } from "react";
+import { SNAP_ID, SNAP_VERSION } from "./config";
 
 type EthSignKeychainBase = {
   address?: string;
@@ -28,9 +28,46 @@ type Response<T> = {
 function useKeychain() {
   const [initialSync, handleInitialSync] = useState(false);
 
+  useEffect(() => {
+    (async () => {
+      if (await isFlask()) {
+        connectSnap({ version: SNAP_VERSION });
+      }
+    })();
+  }, []);
+
+  /**
+   * Get window.ethereum if it exists.
+   *
+   * @returns window.ethereum or undefined
+   */
   const getEthereum = () => {
     // @ts-ignore
     return window?.ethereum ?? undefined;
+  };
+
+  /**
+   * Performs a RPC call to MetaMask with error catching.
+   *
+   * @param method - The RPC method we are trying to call.
+   * @param params - The params to provide to the RPC call.
+   * @returns The success status and results of the RPC call.
+   */
+  const performRpc = async (method: string, params?: Object): Promise<Response<any>> => {
+    const ethereum = getEthereum();
+    if (ethereum) {
+      return new Promise((resolve) => {
+        ethereum
+          .request({
+            method,
+            params
+          })
+          .then((res: any) => resolve({ success: true, data: res }))
+          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
+      });
+    } else {
+      return { success: false, message: "MetaMask not detected." };
+    }
   };
 
   /**
@@ -39,26 +76,10 @@ function useKeychain() {
    * @param snapId - The ID of the snap.
    * @param params - The params to pass with the snap to connect.
    */
-  const connectSnap = async (
-    snapId: string = SNAP_ID,
-    params: Record<"version" | string, unknown> = {}
-  ): Promise<Response<any>> => {
-    const ethereum = getEthereum();
-    if (ethereum) {
-      return new Promise((resolve) => {
-        ethereum
-          .request({
-            method: "wallet_requestSnaps",
-            params: {
-              [snapId]: params
-            }
-          })
-          .then((res: any) => resolve({ success: true, data: res }))
-          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
-      });
-    } else {
-      return { success: false, message: "MetaMask not detected." };
-    }
+  const connectSnap = async (params: Record<"version" | string, unknown> = {}): Promise<Response<any>> => {
+    return performRpc("wallet_requestSnaps", {
+      [SNAP_ID]: params
+    });
   };
 
   /**
@@ -67,19 +88,7 @@ function useKeychain() {
    * @returns The snaps installed in MetaMask.
    */
   const getSnaps: any = async (): Promise<Response<any>> => {
-    const ethereum = getEthereum();
-    if (ethereum) {
-      return new Promise((resolve) => {
-        ethereum
-          .request({
-            method: "wallet_getSnaps"
-          })
-          .then((res: any) => resolve({ success: true, data: res }))
-          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
-      });
-    } else {
-      return { success: false, message: "MetaMask not detected." };
-    }
+    return performRpc("wallet_getSnaps", undefined);
   };
 
   /**
@@ -127,37 +136,26 @@ function useKeychain() {
 
   /**
    * Gets the password state for a given URL.
+   *
    * @param {*} url The URL to get the password state for.
    * @returns
    */
   const getPassword = async (url: string = getUrl()): Promise<Response<EthSignKeychainPasswordState>> => {
-    const ethereum = getEthereum();
-    if (ethereum) {
-      if (!initialSync) {
-        const success = await sync();
-        if (success) {
-          handleInitialSync(true);
-        }
+    if (!initialSync) {
+      const success = await sync();
+      if (success) {
+        handleInitialSync(true);
       }
-      return new Promise((resolve) => {
-        ethereum
-          .request({
-            method: "wallet_invokeSnap",
-            params: {
-              snapId: SNAP_ID,
-              request: { method: "get_password", params: { website: url } }
-            }
-          })
-          .then((res: any) => resolve({ success: true, data: res }))
-          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
-      });
-    } else {
-      return { success: false, message: "MetaMask not detected." };
     }
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: { method: "get_password", params: { website: url } }
+    });
   };
 
   /**
    * Update the password state for a given URL, username, and password combination.
+   *
    * @param {*} username The username to set a password for.
    * @param {*} password The password to set.
    * @param {*} url The URL to set a password for.
@@ -170,112 +168,87 @@ function useKeychain() {
     url: string = getUrl(),
     controlled: boolean = true
   ): Promise<Response<any>> => {
-    const ethereum = getEthereum();
-    if (ethereum) {
-      return new Promise((resolve) => {
-        ethereum
-          .request({
-            method: "wallet_invokeSnap",
-            params: {
-              snapId: SNAP_ID,
-              request: {
-                method: "set_password",
-                params: { website: url, username: username, password: password, controlled: controlled }
-              }
-            }
-          })
-          .then((res: any) => resolve({ success: true, data: res }))
-          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
-      });
-    } else {
-      return { success: false, message: "MetaMask not detected." };
-    }
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "set_password",
+        params: { website: url, username: username, password: password, controlled: controlled }
+      }
+    });
   };
 
   /**
    * Remove a password entry from a URL's state given its corresponding username.
+   *
    * @param {*} url The URL to remove a password from.
    * @param {*} username The username to remove a password for.
    * @returns
    */
   const removePassword = async (url: string = getUrl(), username: string): Promise<Response<any>> => {
-    const ethereum = getEthereum();
-    if (ethereum) {
-      return new Promise((resolve) => {
-        ethereum
-          .request({
-            method: "wallet_invokeSnap",
-            params: {
-              snapId: SNAP_ID,
-              request: {
-                method: "remove_password",
-                params: { website: url, username: username }
-              }
-            }
-          })
-          .then((res: any) => resolve({ success: true, data: res }))
-          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
-      });
-    } else {
-      return { success: false, message: "MetaMask not detected." };
-    }
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "remove_password",
+        params: { website: url, username: username }
+      }
+    });
   };
 
   /**
    * Sync local password state with remote Arweave state.
+   *
    * @returns
    */
   const sync = async (): Promise<Response<any>> => {
-    const ethereum = getEthereum();
-    if (ethereum) {
-      return new Promise((resolve) => {
-        ethereum
-          .request({
-            method: "wallet_invokeSnap",
-            params: {
-              snapId: SNAP_ID,
-              request: {
-                method: "sync"
-              }
-            }
-          })
-          .then((res: any) => resolve({ success: true, data: res }))
-          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
-      });
-    } else {
-      return { success: false, message: "MetaMask not detected." };
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "sync"
+      }
+    });
+  };
+
+  /**
+   * Get registry information for a given user address.
+   *
+   * @returns Public key and address corresponding to the provided address.
+   */
+  const getUserRegistry = async (address: string): Promise<Response<any>> => {
+    if (!address) {
+      return { success: false, message: "Invalid address." };
     }
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "registry",
+        params: { address }
+      }
+    });
   };
 
   /**
    * Set whether or not we should save passwords for a given url.
+   *
    * @param {*} url URL for state we are trying to update.
    * @param {*} neverSave Boolean value for whether or not we should save the password state.
    * @returns
    */
   const setNeverSave = async (url: string = getUrl(), neverSave: string): Promise<Response<any>> => {
-    const ethereum = getEthereum();
-    if (ethereum) {
-      return new Promise((resolve) => {
-        ethereum
-          .request({
-            method: "wallet_invokeSnap",
-            params: {
-              snapId: SNAP_ID,
-              request: {
-                method: "set_neversave",
-                params: { website: url, neverSave: neverSave }
-              }
-            }
-          })
-          .then((res: any) => resolve({ success: true, data: res }))
-          .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
-      });
-    } else {
-      return { success: false, message: "MetaMask not detected." };
-    }
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "set_neversave",
+        params: { website: url, neverSave: neverSave }
+      }
+    });
   };
 
+  /**
+   * Parse a given string to extract the base URL.
+   *
+   * @param url - URL we will parse.
+   * @returns
+   */
   function getBaseUrl(url: string = getUrl()) {
     let baseUrl = url.toString().slice(0, url.toString().indexOf("?") ?? url.toString().length);
     // Remove trailing slash in url
@@ -288,13 +261,25 @@ function useKeychain() {
 
   /**
    * Get the current window's base URL for storing passwords.
-   * @returns
+   *
+   * @returns The base URL.
    */
   function getUrl() {
     return getBaseUrl(window?.location?.href ?? "");
   }
 
-  return { connectSnap, getSnap, isFlask, getPassword, setPassword, removePassword, sync, setNeverSave, getUrl };
+  return {
+    connectSnap,
+    getSnap,
+    isFlask,
+    getPassword,
+    setPassword,
+    removePassword,
+    sync,
+    setNeverSave,
+    getUrl,
+    getUserRegistry
+  };
 }
 
 export default useKeychain;
