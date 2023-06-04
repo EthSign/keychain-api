@@ -19,7 +19,8 @@ function ReactApp() {
     removePassword,
     sync,
     setNeverSave,
-    getUrl
+    getUrl,
+    getUserRegistry
   } = useKeychain();
   ...
   return <>...</>;
@@ -117,5 +118,15 @@ Get the current window's base URL for storing passwords.
 ```jsx
 ...
 getUrl();
+...
+```
+
+### `getUserRegistry(address: string): Promise<Response<{publicAddress: string, publicKey: string}>>`
+Get the public key of a user given the user's public address.
+
+```jsx
+...
+const address = "0x985Eb8f653Ab087d4122F0C1dBc7972dF6B1642B";
+await getUserRegistry(address);
 ...
 ```
