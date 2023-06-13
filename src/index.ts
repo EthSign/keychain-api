@@ -62,7 +62,12 @@ function useKeychain() {
             method,
             params
           })
-          .then((res: any) => resolve({ success: true, data: res }))
+          .then((res: any) => {
+            if (res?.success === false) {
+              resolve({ success: false, message: res.message ?? "" });
+            }
+            resolve({ success: true, data: res?.data ? res.data : res });
+          })
           .catch((err: any) => resolve({ success: false, message: err.message ? err.message : err }));
       });
     } else {
@@ -244,6 +249,45 @@ function useKeychain() {
   };
 
   /**
+   * Encrypt a string that can only be decrypted by the wallet address provided. Provide your own address if you are encrypting a string to be decrypted by your wallet.
+   *
+   * @param address - Recipient address.
+   * @param data - String to be encrypted.
+   * @returns Encrypted data if successful, error message if unsuccessful.
+   */
+  const encrypt = async (
+    address: string,
+    data: string
+  ): Promise<{ success: boolean; message?: string; data?: string }> => {
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "encrypt",
+        params: {
+          address,
+          data
+        }
+      }
+    });
+  };
+
+  /**
+   * Decrypt an encrypted string using the current wallet's private key.
+   *
+   * @param data - Encrypted string to be decrypted.
+   * @returns Decrypted data if successful, error message if unsuccessful.
+   */
+  const decrypt = async (data: string): Promise<{ success: boolean; message?: string; data?: string }> => {
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "decrypt",
+        params: { data }
+      }
+    });
+  };
+
+  /**
    * Parse a given string to extract the base URL.
    *
    * @param url - URL we will parse.
@@ -277,6 +321,8 @@ function useKeychain() {
     removePassword,
     sync,
     setNeverSave,
+    encrypt,
+    decrypt,
     getUrl,
     getUserRegistry
   };
