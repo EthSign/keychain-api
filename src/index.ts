@@ -255,10 +255,7 @@ function useKeychain() {
    * @param data - String to be encrypted.
    * @returns Encrypted data if successful, error message if unsuccessful.
    */
-  const encrypt = async (
-    address: string,
-    data: string
-  ): Promise<{ success: boolean; message?: string; data?: string }> => {
+  const encrypt = async (address: string, data: string): Promise<Response<string>> => {
     return performRpc("wallet_invokeSnap", {
       snapId: SNAP_ID,
       request: {
@@ -277,12 +274,42 @@ function useKeychain() {
    * @param data - Encrypted string to be decrypted.
    * @returns Decrypted data if successful, error message if unsuccessful.
    */
-  const decrypt = async (data: string): Promise<{ success: boolean; message?: string; data?: string }> => {
+  const decrypt = async (data: string): Promise<Response<string>> => {
     return performRpc("wallet_invokeSnap", {
       snapId: SNAP_ID,
       request: {
         method: "decrypt",
         params: { data }
+      }
+    });
+  };
+
+  /**
+   * Export the user's local password state.
+   *
+   * @returns Object in the format { success: boolean, message?: string, data?: string }
+   */
+  const exportState = async (): Promise<Response<string>> => {
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "export"
+      }
+    });
+  };
+
+  /**
+   * Import a user's password state.
+   *
+   * @param data - String containing the exported JSON object to be imported.
+   * @returns Object in the format { success: boolean, message?: string, data?: string }
+   */
+  const importState = async (data: string): Promise<Response<string>> => {
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "decrypt",
+        params: data
       }
     });
   };
@@ -323,6 +350,8 @@ function useKeychain() {
     setNeverSave,
     encrypt,
     decrypt,
+    exportState,
+    importState,
     getUrl,
     getUserRegistry
   };

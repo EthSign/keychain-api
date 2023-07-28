@@ -19,6 +19,10 @@ function ReactApp() {
     removePassword,
     sync,
     setNeverSave,
+    encrypt,
+    decrypt,
+    exportState,
+    importState,
     getUrl,
     getUserRegistry
   } = useKeychain();
@@ -109,6 +113,49 @@ Set whether or not we should save passwords for a given url. `url` defaults to t
 const url = "https://ethsign.xyz";
 const neverSave = false;
 await setNeverSave(url, neverSave);
+...
+```
+
+### `encrypt(data: string): Promise<Response<string>>`
+Encrypt a string using a receiver's public key. Fails if receiver's public key cannot be located.
+
+```jsx
+...
+const address = "0x985Eb8f653Ab087d4122F0C1dBc7972dF6B1642B";
+const str = "Secret message.";
+await encrypt(address, str);
+...
+```
+
+### `decrypt(address: string, data: string): Promise<Response<string>>`
+Decrypts a hex string using the current user's private key.
+
+```jsx
+...
+const data = "04a487f5222b8423863b79424f28ddb324d825bd9d75cd7d5411ab925a53ba391e9512030a9168333bbade7038fa9411f2ac2b5e4f3b6d2109c1be5ef4a4175f4daad3c1556cb97bd2c7b62f77fd5bc0b628eb3d82ca68337520038bfba4ac7fe72dcf1497fea656757a58d0c2856d";
+await decrypt(data);
+...
+```
+
+### `exportState(): Promise<Response<string>>`
+Export the password state from the current user's EthSignKeychainState stored locally. Requires user to enter a password for encryption.
+
+```jsx
+...
+await exportState();
+...
+```
+
+### `importState(data: string): Promise<Response<string>>`
+Import a user's password state, which was encrypted and exported into a JSON object containing nonce and data strings.
+
+```jsx
+...
+const state = {
+  "success": true,
+  "data": "{\"nonce\":\"M0Z4ILxRGNgdXqttekhThAvVXAYtQcRk\",\"data\":\"UyECrNKhnvzl6rBfrrgtkY8K+baBtSUqTT3kzTybxs6UHlgi8nYS3LArJAg+ZfFqEW/7dP+iEmL/TOiAEcNOkKlTBgdAquTg1F9cUaf6IWvZDLCq030j0OOBHIfQiolYDhm57fGgzxqpFXCRqAEMwvR+p4MnDdFAJE1ccXpbvxznofMqsAz0+n40sDz6SFZ6ro1kv5ZzEhkgUWyKblkHXo5fELPjNWXVxY2aBNAMVqqWoy2fFhNJHO60vHkZ18Ac3Y9hxIDLqX4NrSadRKlpwDE4wrve0D3any++vaxHf5froXZvut42V+Y0zX42n0FJPbNlY5/kuPgBM01Z5c/APzkcwjqzeHsQTk8ZOtWYL3+j6xMkFLOCZtjZX4psNFbIUwjwBjlE3MZCmCi1FXZkDaMFzFkk52XVYkz4o1KtoKa13CXA594oFS2i5OTBPrDspE3LHXwVkRdECBW7Q9QeInH6eJ+sIVgbc7ho8BZ3prPxq8Ub4K3XiC/XB7hWxaRe1uBuSiXtVOyX9PH1PJFbnKFhEL3t+eYCNS1W87qVRZvYyfFxQIf6TKN3a/jY9/OM6f8CYVfr7AvIvGxg1520hV5UVJwFwimrcJnEmJAqBRJAxZN/AI++0XqXFbo8lwueISqBy38deOiitX6Zi6cSY+5gDU2ONetOduX5O/8wo/Teu6dFyx9kQ2jDW1F/ceC19Chy0GnEIHdZTMGz3AiPRx5ltnPLNxBOjn+5Mnevo+/DmZqJOwIIqCoKTaUKatdaAE6QFKWvGbfcQvdUZyqfeEQpzsqmbl03rrH3RpSmCqJfMDSg7YmO6fq4sVFGjjQIPEhhplBTrzVWVvPHfDWIAdlrOETMFWS2zch/OD7uZJ9P2pZ0DAA0r2caqXz43cD7BOY=\"}"
+};
+await importState(JSON.stringify(state));
 ...
 ```
 
