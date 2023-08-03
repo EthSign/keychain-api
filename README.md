@@ -177,3 +177,22 @@ const address = "0x985Eb8f653Ab087d4122F0C1dBc7972dF6B1642B";
 await getUserRegistry(address);
 ...
 ```
+
+### `getSyncTo(): Promise<string>`
+Get the remote sync location from the keychain snap.
+
+```jsx
+...
+await getSyncTo();
+...
+```
+
+### `setSyncTo(): Promise<string>`
+Set the remote sync location for the snap. Returns the newly set remote sync location, or the existing location if an exception occurs.
+
+```jsx
+...
+const location = "arweave";
+await setSyncTo(location);
+...
+```
