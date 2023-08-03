@@ -299,6 +299,36 @@ function useKeychain() {
   };
 
   /**
+   * Set the remote sync location for the snap.
+   *
+   * @param syncTo - String consisting of "arweave", "aws", or "none".
+   * @returns String consisting of the remote sync location after updating the sync value.
+   */
+  const setSyncTo = async (syncTo: string) => {
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "set_sync_to",
+        params: { data: { syncTo } }
+      }
+    });
+  };
+
+  /**
+   * Get the remote sync location from the keychain snap.
+   *
+   * @returns String consisting of the remote sync location.
+   */
+  const getSyncTo = async () => {
+    return performRpc("wallet_invokeSnap", {
+      snapId: SNAP_ID,
+      request: {
+        method: "get_sync_to"
+      }
+    });
+  };
+
+  /**
    * Import a user's password state.
    *
    * @param data - String containing the exported JSON object to be imported.
@@ -353,7 +383,9 @@ function useKeychain() {
     exportState,
     importState,
     getUrl,
-    getUserRegistry
+    getUserRegistry,
+    setSyncTo,
+    getSyncTo
   };
 }
 
