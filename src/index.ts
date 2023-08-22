@@ -30,9 +30,7 @@ function useKeychain() {
 
   useEffect(() => {
     (async () => {
-      if (await isFlask()) {
-        connectSnap({ version: SNAP_VERSION });
-      }
+      connectSnap({ version: SNAP_VERSION });
     })();
   }, []);
 
@@ -115,27 +113,6 @@ function useKeychain() {
     } catch (e) {
       console.log("Failed to obtain installed snap", e);
       return undefined;
-    }
-  };
-
-  /**
-   * Detect if the wallet injecting the ethereum object is Flask.
-   *
-   * @returns True if the MetaMask version is Flask, false otherwise.
-   */
-  const isFlask = async (): Promise<boolean> => {
-    const ethereum = getEthereum();
-    try {
-      const clientVersion = await ethereum?.request({
-        method: "web3_clientVersion"
-      });
-
-      // @ts-ignore
-      const isFlaskDetected = clientVersion?.includes("flask");
-
-      return Boolean(ethereum && isFlaskDetected);
-    } catch {
-      return false;
     }
   };
 
@@ -372,7 +349,6 @@ function useKeychain() {
   return {
     connectSnap,
     getSnap,
-    isFlask,
     getPassword,
     setPassword,
     removePassword,

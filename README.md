@@ -13,7 +13,6 @@ function ReactApp() {
   const {
     connectSnap,
     getSnap,
-    isFlask,
     getPassword,
     setPassword,
     removePassword,
@@ -50,15 +49,6 @@ Looks for the EthSign Keychain snap in the installed list of snaps on the user's
 ...
 const SNAP_VERSION: "0.2.6";
 await getSnap(SNAP_VERSION);
-...
-```
-
-### `isFlask(): Promise<boolean>`
-Returns true if the current MetaMask installation is the Flask build. False otherwise.
-  
-```jsx
-...
-await isFlask();
 ...
 ```
 
