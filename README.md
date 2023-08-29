@@ -31,6 +31,13 @@ function ReactApp() {
 ```
 `useKeychain()` will automatically call `connectSnap()` once. If the MetaMask popup is rejected, you will need to call `connectSnap()` again to use other EthSign Keychain functionality.
 
+### NOTE - Troubleshooting Crashes
+The MetaMask Snaps API supports showing one popup at a time. If your code invokes the snap more than once (or before previous calls have completed), MetaMask may crash and all popups will disappear, even if the first one was already showing. Snap RPCs are not blocking within MetaMask. These snap crashes may not be present if the user has already granted appropriate access permissions, but they may be present on a new install (or where access permissions for your site have not been already granted).
+
+For instance, calling `setPassword()` immediately followed by `getPassword()` where the user has not previously granted your site permission to their credential store will likely cause a crash: `setPassword()` will request access permissions through a MetaMask popup and the user will not have time to interact with the popup before `getPassword()` requests access permissions again. This will attempt to show two popups at the same time, and MetaMask will terminate the Keychain snap.
+
+This can also be an issue with `React.StrictMode` enabled in your development environment if your function call to the snap results in a popup. `React.StrictMode` will render components twice, which means any `useEffect()` calls will run twice in immediate succession. This can result in MetaMask attempting to show two popups at the same time, which will crash the snap even if you only called the respective function once from within a `useEffect()`.
+
 ## Methods
 ### `connectSnap(params: Record<"version" | string, unknown> = {}): Promise<Response<any>>`
 Prompts MetaMask to install the EthSign Keychain snap. Version can be a string corresponding to a version of the EthSign Keychain Snap. Left blank, it will install the latest version.
