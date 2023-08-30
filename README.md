@@ -23,7 +23,9 @@ function ReactApp() {
     exportState,
     importState,
     getUrl,
-    getUserRegistry
+    getUserRegistry,
+    getSyncTo,
+    setSyncTo
   } = useKeychain();
   ...
   return <>...</>;
